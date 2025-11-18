@@ -29,7 +29,7 @@ def get_posts():
 @app.route('/api/posts', methods=['POST'])
 def add_post():
 
-    # Getting form data
+    # Getting data from user POST request
     data = request.get_json()
 
     # Validation all fields are mandatory
@@ -63,6 +63,27 @@ def delete_post(post_id):
     else:
         POSTS.remove(post)
         return jsonify({"message": f"Post with id {post_id} has been deleted successfully"}), 200
+
+@app.route('/api/posts/<int:post_id>', methods=['PUT'])
+def update_post(post_id):
+
+    # Getting data from user PUT request
+    data = request.get_json()
+
+    #Checking if ID already exists
+    post = find_post_by_id(post_id)
+
+    if post is None:
+        return jsonify({"error": f"Post not found. There is no post with id {post_id}"}), 404
+
+    # Update only fields that were sent
+    if 'title' in data:
+        post['title'] = data['title']
+
+    if 'content' in data:
+        post['content'] = data['content']
+
+    return jsonify(post), 200
 
 
 if __name__ == '__main__':
