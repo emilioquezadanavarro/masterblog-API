@@ -9,6 +9,18 @@ POSTS = [
     {"id": 2, "title": "Second post", "content": "This is the second post."},
 ]
 
+# Helper function to find the post by ID
+
+def find_post_by_id(post_id):
+    """ Find the post with the id `post_id`.
+    If there is no post with this id, return None.
+    """
+    for post in POSTS:
+        if post['id'] == post_id:
+            return post
+    return None
+
+# Routes
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
@@ -42,6 +54,15 @@ def add_post():
     POSTS.append(new_post)
 
     return jsonify(new_post), 201
+
+@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+def delete_post(post_id):
+    post = find_post_by_id(post_id)
+    if post is None:
+        return jsonify({"error": f"Post not found. There is no post with id {post_id}"}), 404
+    else:
+        POSTS.remove(post)
+        return jsonify({"message": f"Post with id {post_id} has been deleted successfully"}), 200
 
 
 if __name__ == '__main__':
