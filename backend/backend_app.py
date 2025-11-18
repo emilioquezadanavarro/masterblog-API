@@ -1,8 +1,13 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
+limiter = Limiter(app=app, key_func=get_remote_address)
+
 
 POSTS = [
     {"id": 1, "title": "First post", "content": "This is the first post."},
@@ -24,9 +29,29 @@ def find_post_by_id(post_id):
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
-    return jsonify(POSTS)
+
+    # Get optional sort parameters
+    sort = request.args.get('sort')
+    direction = request.args.get('direction')
+
+    # If no sort parameters, return original list
+    if not sort and not direction:
+        return jsonify(POSTS)
+
+    # Sort Validation
+    if sort not in ['title', 'content']:
+        return jsonify({"error": "Invalid sort field. Use 'title' or 'content'"}), 400
+
+    # Sort Validation
+    if direction not in ['asc', 'desc']:
+        return jsonify({"error": "Invalid direction. Use 'asc' or 'desc'"}), 400
+
+    sorted_list = sorted(POSTS, key=lambda post: post[sort].lower(), reverse=(direction == 'desc'))
+    return jsonify(sorted_list)
+
 
 @app.route('/api/posts', methods=['POST'])
+@limiter.limit("10/minute")  # Limit to 10 requests per minute
 def add_post():
 
     # Getting data from user POST request
@@ -56,6 +81,7 @@ def add_post():
     return jsonify(new_post), 201
 
 @app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+@limiter.limit("10/minute")
 def delete_post(post_id):
     post = find_post_by_id(post_id)
     if post is None:
@@ -65,6 +91,7 @@ def delete_post(post_id):
         return jsonify({"message": f"Post with id {post_id} has been deleted successfully"}), 200
 
 @app.route('/api/posts/<int:post_id>', methods=['PUT'])
+@limiter.limit("10/minute")
 def update_post(post_id):
 
     # Getting data from user PUT request
